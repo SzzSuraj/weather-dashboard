@@ -3,7 +3,7 @@ const searchBtn = document.getElementById('searchBtn');
 const currentWeather = document.getElementById('currentWeather');
 const forecastWeather = document.getElementById('forecastWeather');
 
-const API_KEY = "YOUR_API_KEY_HERE"; // Replace with your OpenWeatherMap key
+const API_KEY = "b4878daef8ab2fb6a39f043bd44f59bf";
 
 searchBtn.addEventListener('click', () => {
     const city = cityInput.value.trim();
@@ -21,7 +21,7 @@ async function fetchWeather(city){
 
     try {
         // --- Current Weather ---
-        const currentRes = await fetch(`https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${"b4878daef8ab2fb6a39f043bd44f59bf"}&units=metric`);
+        const currentRes = await fetch(`https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${API_KEY}&units=metric`);
         const currentData = await currentRes.json();
         if(currentData.cod !== 200) throw new Error(currentData.message);
 
@@ -38,7 +38,7 @@ async function fetchWeather(city){
         currentWeather.appendChild(currentCard);
 
         // --- 5-Day Forecast ---
-        const forecastRes = await fetch(`https://api.openweathermap.org/data/2.5/forecast?q=${city}&appid=${"b4878daef8ab2fb6a39f043bd44f59bf"}&units=metric`);
+        const forecastRes = await fetch(`https://api.openweathermap.org/data/2.5/forecast?q=${city}&appid=${API_KEY}&units=metric`);
         const forecastData = await forecastRes.json();
 
         // Filter to get one forecast per day (at 12:00)
@@ -55,6 +55,57 @@ async function fetchWeather(city){
             `;
             forecastWeather.appendChild(forecastCard);
         });
+
+        // --- Chart.js Temperature Trend ---
+            const ctx = document.getElementById('tempChart').getContext('2d');
+
+            // Extract labels (dates) and data (temperatures)
+            const labels = dailyForecasts.map(f => new Date(f.dt_txt).toLocaleDateString());
+            const temps = dailyForecasts.map(f => f.main.temp);
+
+            // Destroy previous chart if exists to avoid duplication
+            if(window.tempChartInstance) {
+                window.tempChartInstance.destroy();
+            }
+
+            // Create new chart
+            window.tempChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: `5-Day Temperature for ${city}`,
+                        data: temps,
+                        fill: true,
+                        backgroundColor: 'rgba(108, 99, 255, 0.2)',
+                        borderColor: 'rgba(108, 99, 255, 1)',
+                        tension: 0.3,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        },
+                    },
+                    scales: {
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Temperature (°C)'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Date'
+                            }
+                        }
+                    }
+                }
+            });
 
     } catch(err){
         alert("Error fetching weather: " + err.message);
